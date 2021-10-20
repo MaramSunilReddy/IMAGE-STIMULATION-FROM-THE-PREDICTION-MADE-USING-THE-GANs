@@ -1,0 +1,48 @@
+train('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/data/train_data/')
+def overfit_a_img(path):
+    img = PIL.Image.open('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/bea4.jpg')
+
+    img = (np.array([img_to_array(crop_and_resize_image(img, (128, 128)))])/255.0) * 2-1
+    padded_img = get_masked_images(img, 32)
+
+    array_to_img(img[0]).save('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/aa1.jpg')
+    array_to_img(padded_img[0]).save('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/pad1.jpg')
+
+    generator.load_weights('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/checkpoint/generator_end.h5')
+    generator.fit(padded_img, img, epochs=10, steps_per_epoch=100)
+    a = generator.predict(padded_img)
+    array_to_img((a[0] + 1) / 2).save('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/444.jpg')
+overfit_a_img('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/bea4.jpg')
+
+# Computing the RMSE between a ground truth and outpainted image
+def compute_RMSE(image_gt_PATH, image_op_PATH):
+    image_gt = PIL.Image.open(image_gt_PATH).convert('RGB')
+    image_gt = np.array(crop_and_resize_image(image_gt, (128, 128)))
+    image_op = np.array(PIL.Image.open(image_op_PATH).convert('RGB')).astype(np.float64)
+    assert image_gt.shape == (128, 128, 3)
+    assert image_op.shape == (128, 128, 3)
+    M = np.ones((128, 128, 3))
+    M[:, 32:96:, :] = 0
+    num_pixels = 128 * 64 * 3
+    return np.sqrt(np.sum(((image_gt - image_op) * M) ** 2) / num_pixels)
+
+compute_RMSE('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/bea4.jpg', '/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/test/444.jpg')
+
+
+def generate_all_val():
+    data_generator = DataGenerator('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/data/val_data', (128, 128), 10, 32)
+    data_size = len(data_generator)
+
+    print(len(data_generator.validation_file_list),
+          len(data_generator.img_file_list))
+
+    generator.load_weights('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/checkpoint/generator_end.h5')
+
+    for ii, val in enumerate(data_generator.validation_flow()):
+        a = generator.predict(val[0])
+
+        for i, img in enumerate(zip(val[1], a)):
+            array_to_img((img[0] + 1) /
+                         2).save('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/output\{}-{}.jpg'.format(ii, i))
+            array_to_img(
+                img[1] + 1 / 2).save('/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/output\{}-{}_gen.jpg'.format(ii, i))
