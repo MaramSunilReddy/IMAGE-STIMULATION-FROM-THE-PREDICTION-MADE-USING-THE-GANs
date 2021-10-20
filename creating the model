@@ -1,0 +1,13 @@
+# Saving Models and global parameters
+TIME_INTERVAL = 1
+SHOW_SUMMARY = True
+
+IMAGE_SZ = 128
+INPUT_SHAPE = (IMAGE_SZ, IMAGE_SZ, 3)
+EPOCHS = 5
+BATCH_SIZE = 1
+
+MASK_PERCENTAGE = 0.25 # for a 128x128 image it will be 32 pixels on both sides i.e., left and right so the unmasked image will be 128x64 --> center portion if I understood correctly
+
+CHECKPOINT = '/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/model/'
+SAVED_IMAGES = '/content/drive/My Drive/Colab Notebooks/CSE676: Deep Learning/Project 2/saved images'
