@@ -1,0 +1,17 @@
+def build_gan():
+    discriminator.trainable = False
+
+    gan_input = Input(shape=(IMAGE_SZ, IMAGE_SZ, 3))      ## These are masked or Padded Images of shape 128x128 but the 0 to 32 and 96 to 128 will be masked
+    generated_image = generator(gan_input)
+    gan_output = discriminator(generated_image)
+    
+    gan = Model(gan_input,[generated_image, gan_output])
+    return gan
+
+
+gan = build_gan()
+alpha=0.0004
+gan.compile(loss = [losses.MSE, losses.MSE], optimizer = optimizers.Adam(lr=0.0001, beta_1=0.5), loss_weights = [1, alpha])
+gan.summary()
+
+SVG(model_to_dot(gan, show_layer_names=True, show_shapes=True, dpi=60).create(prog='dot', format='svg'))
