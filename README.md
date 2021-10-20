@@ -1,5 +1,5 @@
 # IMAGE-STIMULATION-FROM-THE-PREDICTION-MADE-USING-THE-GANs
-TEChnologies used : Python , Tensorflow , Numpy , Scipy
+TEChnologies used : Python , Tensorflow , Numpy , Scipy ...
 	In this proposed model we can modify the image horizontally and vertically as per our   need.
 	We can improve the quality of the image using this model.
 	From this we can stimulate the image and can make it looking more attractive then the captured image
