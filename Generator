@@ -1,0 +1,45 @@
+def generator_conv_block(layer_input, filters, kernel_size, strides, padding='same', activation='relu', norm=True, dilation_rate=1):
+    conv = Conv2D(filters, kernel_size=kernel_size, strides=strides, dilation_rate=(dilation_rate, dilation_rate), padding=padding)(layer_input)
+    if activation=='relu':
+        conv = Activation('relu')(conv)
+    if norm:
+        conv = InstanceNormalization()(conv)
+    return conv
+
+def generator_Deconv_block(layer_input, filters, kernel_size, strides, padding='same', activation='relu'):
+    deconv = Conv2DTranspose(filters, kernel_size = kernel_size, strides = strides, padding = 'same')(layer_input)
+    if activation == 'relu':
+        deconv = Activation('relu')(deconv)
+    return deconv
+
+def build_generator():
+    generator_input = Input(shape=(IMAGE_SZ, IMAGE_SZ, 3))      ## These are masked or Padded Images of shape 128x128 but the 0 to 32 and 96 to 128 will be masked
+
+    ##### Encoder #####
+    g1 = generator_conv_block(generator_input, 64, 5, strides=1)
+    g2 = generator_conv_block(g1, 128, 3, strides=2)
+    g3 = generator_conv_block(g2, 256, 3, strides=1)
+    # Dilated Convolutions
+    g4 = generator_conv_block(g3, 256, 3, strides=1, dilation_rate=2)
+    g5 = generator_conv_block(g4, 256, 3, strides=1, dilation_rate=4)
+    g6 = generator_conv_block(g5, 256, 3, strides=1, dilation_rate=8)
+    g7 = generator_conv_block(g6, 256, 3, strides=1)
+
+    #### Decoder ####
+    g8 = generator_Deconv_block(g7, 128, 4, strides=2)
+    g9 = generator_conv_block(g8, 64, 3, strides=1)
+    
+ 
+generator_output = Conv2D(3, kernel_size=3, strides=(1,1), activation='sigmoid', padding='same', dilation_rate=(1,1))(g9) ### Some people used 'tanh' instead of sigmoid check later
+    
+    return Model(generator_input, generator_output)
+generator = build_generator()
+generator.compile(loss = 'mse', optimizer = optimizers.Adam(lr=0.0001, beta_1=0.5))
+generator.summary()
+
+# # Saving the Summary and Architecture
+# with open('./drive/My Drive/Colab Notebooks/aml_proj3/inception_resnetv2/model/generator_summary.txt', 'w') as f:
+#     with redirect_stdout(f):
+#         generator.summary()
+# plot_model(generator, to_file='./drive/My Drive/Colab Notebooks/aml_proj3/inception_resnetv2/model/generator_model.png')
+SVG(model_to_dot(generator, show_layer_names=True, show_shapes=True, dpi=60).create(prog='dot', format='svg'))
