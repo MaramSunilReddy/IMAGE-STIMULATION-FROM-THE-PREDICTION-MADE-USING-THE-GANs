@@ -1,0 +1,65 @@
+def discriminator_block(layer_input, filters, kernel_size = 5, strides = 2, padding = 'same', activation='leakyrelu', dropout_rate=0.25, norm=True):
+    conv = Conv2D(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding)(layer_input)
+    if activation == 'leakyrelu':
+        conv = LeakyReLU(alpha=0.2)(conv)
+    if dropout_rate:
+        conv = Dropout(rate=dropout_rate)(conv)
+    if norm:
+        conv = InstanceNormalization()(conv)
+    return conv
+
+def local_build_discriminator(local_disc_input):
+    # disc_input = Input(shape = (IMAGE_SZ, IMAGE_SZ//2, 3)) # only center part
+    model = discriminator_block(local_disc_input, 32, 5, norm=False)
+    model = discriminator_block(model, 64, 5, 2)
+    model = discriminator_block(model, 64, 5, 2)
+    model = discriminator_block(model, 64, 5, 2)
+
+    model = Flatten()(model)
+    local_FC = Dense(512, activation='relu')(model)
+    # output = Dense(1, activation='sigmoid')(FC)
+
+    return local_FC
+
+def global_build_discriminator(global_disc_input):
+    # disc_input = Input(shape = (IMAGE_SZ, IMAGE_SZ, 3))
+    model = discriminator_block(global_disc_input, 32, 5, norm=False)
+    model = discriminator_block(model, 64, 5, 2)
+    model = discriminator_block(model, 64, 5, 2)
+    model = discriminator_block(model, 64, 5, 2)
+    model = discriminator_block(model, 64, 5, 2)
+
+    model = Flatten()(model)
+    global_FC = Dense(512, activation='relu')(model)
+
+    return global_FC
+
+
+
+def build_discriminator():
+    discriminator_input = Input(shape=(IMAGE_SZ, IMAGE_SZ, 3))
+
+    local_discriminator_left = local_build_discriminator(keras.layers.Lambda(lambda x: x[:, :, :IMAGE_SZ//2, :])(discriminator_input))
+    local_discriminator_right = local_build_discriminator(keras.layers.Lambda(lambda x: x[:, :, -IMAGE_SZ//2:, :])(discriminator_input))
+
+    global_discriminator = global_build_discriminator(discriminator_input)
+
+    concatenator = Concatenate()([global_discriminator, local_discriminator_left, local_discriminator_right])
+    discriminator_output = Dense(1, activation='sigmoid')(concatenator)
+
+    return Model(discriminator_input, discriminator_output)
+
+
+
+# local discriminator initialization
+discriminator = build_discriminator()
+discriminator.trainable = False
+discriminator.compile(loss = losses.MSE, optimizer = optimizers.Adam(lr=0.0001, beta_1=0.5))
+discriminator.summary()
+
+# # Saving the Summary and Architecture
+# with open('./drive/My Drive/Colab Notebooks/aml_proj3/inception_resnetv2/model/discriminator_summary.txt', 'w') as f:
+#     with redirect_stdout(f):
+#         discriminator.summary()
+# plot_model(discriminator, to_file='./drive/My Drive/Colab Notebooks/aml_proj3/inception_resnetv2/model/discriminator_model.png')
+SVG(model_to_dot(discriminator, show_layer_names=True, show_shapes=True, dpi=60).create(prog='dot', format='svg'))
